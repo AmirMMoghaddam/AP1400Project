@@ -59,7 +59,7 @@ class Maker:
         self.puzzle[self.index[0]][self.index[1]] = numb
 
     def indexDecoding(self, numb):
-        a = -1
+        a = 0
         number = numb
         while number > 9:
             number = number - 9

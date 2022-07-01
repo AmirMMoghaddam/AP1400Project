@@ -16,7 +16,7 @@ class Earaser:
         self.uniqueness = True
 
     def indexDecoding(self, numb):
-        a = -1
+        a = 0
         number = numb
         while number > 9:
             number = number - 9
@@ -73,14 +73,3 @@ def start(puzzle, number):
     myP = Earaser(puzzle, number)
     a = myP.starter()
     return a
-
-
-starter = []
-for i in range(0, 9):
-    starter.append([0, 0, 0, 0, 0, 0, 0, 0, 0])
-b = create(starter)
-print("The awnser is : ")
-print(b)
-puzz = start(b, 49)
-print("******************The Puzzle IS*********************")
-print(puzz)
