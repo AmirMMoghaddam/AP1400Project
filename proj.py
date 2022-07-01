@@ -1,5 +1,6 @@
 import os
-from time import time
+from time import sleep, time
+from tkinter import N
 import PyQt5
 import sys
 from PyQt5 import uic, QtGui, QtCore
@@ -12,12 +13,19 @@ import copy
 
 # اینجا باید اینو باز کنیم ببینیم طرف چی انتخاب کرده بعد ببندیم بعدیو باز  کنیم
 Form = uic.loadUiType(os.path.join(os.getcwd(), "project.ui"))[0]
-# self.pushButton_biginner.connect()
-# self.pushButton_medium.connect()
-# self.pushButton_hard.connect()
+
 # اینا باید تو کلاس تعریف بشن ولی نمیدونم چجوری برا همین اینجا نوشتم
 
-# Form = uic.loadUiType(os.path.join(os.getcwd(), "proj.ui"))[0]
+FormM = uic.loadUiType(os.path.join(os.getcwd(), "projectmain.ui"))[0]
+
+
+class MainWindow(QMainWindow, FormM):
+    def __init__(self):
+        super(MainWindow, self).__init__()
+        self.setupUi(self)
+        self.pushButton_biginner.clicked.connect(Game)
+        self.pushButton_medium.clicked.connect(Game)
+        self.pushButton_hard.clicked.connect(Game)
 
 
 class IntroWindow(QMainWindow, Form):
@@ -35,6 +43,7 @@ class IntroWindow(QMainWindow, Form):
         self.quit.clicked.connect(lambda: app.quit())
         self.checkbutton.clicked.connect(self.CheckAwnser)
         self.clearbutton.clicked.connect(self.Clear)
+        self.resetbutton.clicked.connect(self.Reset)
         self.text_time.setText(f"{time()/1000}ms")
 
         #   به جای این که خیلی اشغاله میتونیم از ال سی دی استفاده کنیم به نظرت هرچی بهتره
@@ -63,6 +72,15 @@ class IntroWindow(QMainWindow, Form):
                             "_"+str(j)).setPalette(Palette)
                     getattr(self, "lineEdit_"+str(i) +
                             "_"+str(j)).setReadOnly(True)
+                    sleep(0.01)
+                else:
+                    getattr(self, "lineEdit_"+str(i)+"_" +
+                            str(j)).setText('')
+                    Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.black)
+                    getattr(self, "lineEdit_"+str(i) +
+                            "_"+str(j)).setPalette(Palette)
+                    getattr(self, "lineEdit_"+str(i) +
+                            "_"+str(j)).setReadOnly(False)
 
     def indexDecoding(self, numb):
         a = 0
@@ -103,6 +121,19 @@ class IntroWindow(QMainWindow, Form):
         for i in self.untaken:
             [i, j] = self.indexDecoding(i)
             a = getattr(self, "lineEdit_"+str(i) + "_"+str(j)).clear()
+
+    def Reset(self):
+        self.untaken = list(range(1, 82))
+        starter = []
+        for i in range(0, 9):
+            starter.append([0, 0, 0, 0, 0, 0, 0, 0, 0])
+        b = create(starter)
+        print("Created")
+        self.sul = b
+        c = copy.deepcopy(b)
+        self.puzzle = start(c, 20)
+        print("Started")
+        self.Fill()
 
     def CheckAwnser(self):
         Palette = QtGui.QPalette()
@@ -201,6 +232,20 @@ def textchange(text):
     print(text)
 
 
+def Game():
+    starter = []
+    for i in range(0, 9):
+        starter.append([0, 0, 0, 0, 0, 0, 0, 0, 0])
+    b = create(starter)
+    print("Created")
+    c = copy.deepcopy(b)
+    puzz = start(c, 20)
+    print("Started")
+    w = IntroWindow(puzz, b)
+    print(b)
+    w.show()
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle("fusion")
@@ -215,4 +260,5 @@ if __name__ == "__main__":
     w = IntroWindow(puzz, b)
     print(b)
     w.show()
+
     sys.exit(app.exec_())
