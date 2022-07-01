@@ -1,12 +1,10 @@
-from logging.config import listen
 import os
-from textwrap import indent
 from time import time
 import PyQt5
 import sys
 from PyQt5 import uic, QtGui, QtCore
 from PyQt5.QtWidgets import QApplication, QMainWindow
-import numpy as np
+from matplotlib.pyplot import text
 from FinalMaker import *
 from genartor import *
 import random
@@ -19,7 +17,7 @@ Form = uic.loadUiType(os.path.join(os.getcwd(), "project.ui"))[0]
 # self.pushButton_hard.connect()
 # اینا باید تو کلاس تعریف بشن ولی نمیدونم چجوری برا همین اینجا نوشتم
 
-#Form = uic.loadUiType(os.path.join(os.getcwd(), "proj.ui"))[0]
+# Form = uic.loadUiType(os.path.join(os.getcwd(), "proj.ui"))[0]
 
 
 class IntroWindow(QMainWindow, Form):
@@ -32,15 +30,19 @@ class IntroWindow(QMainWindow, Form):
         self.untaken = list(range(1, 82))
         self.index = 0
         self.Fill()
+        self.values = 0
         self.hint.clicked.connect(self.sayhint)
         self.quit.clicked.connect(lambda: app.quit())
-        self.text_time.setText(f"{time()/1000000}ms")
+        self.checkbutton.clicked.connect(self.CheckAwnser)
+        self.clearbutton.clicked.connect(self.Clear)
+        self.text_time.setText(f"{time()/1000}ms")
+
         #   به جای این که خیلی اشغاله میتونیم از ال سی دی استفاده کنیم به نظرت هرچی بهتره
         # https://doc.qt.io/qtforpython-5/PySide2/QtWidgets/QLCDNumber.html
 
         # تو کدت اونجایی که خونه ها تعریف میشن چی باشن اینو ست تکست کن کن
         # self.text_xy.textChanged.connect(self.textchange)
-        #self.progressBar.setRange(maximum, minimum)
+        # self.progressBar.setRange(maximum, minimum)
         # self.progressBar.valueChanged()
 
       # برای اینکه نشون بده چند درصدش کامل شده اینجا درصد میدی نشون میده
@@ -61,15 +63,6 @@ class IntroWindow(QMainWindow, Form):
                             "_"+str(j)).setPalette(Palette)
                     getattr(self, "lineEdit_"+str(i) +
                             "_"+str(j)).setReadOnly(True)
-                else:
-                    getattr(self, "lineEdit_"+str(i)+"_"+str(j)).setText('')
-                    getattr(self, "lineEdit_"+str(i)+"_"+str(j)
-                            ).setFont(QtGui.QFont("Times", weight=QtGui.QFont.Normal))
-                    Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.blue)
-                    getattr(self, "lineEdit_"+str(i) +
-                            "_"+str(j)).setPalette(Palette)
-                    getattr(self, "lineEdit_"+str(i) +
-                            "_"+str(j)).setReadOnly(False)
 
     def indexDecoding(self, numb):
         a = 0
@@ -101,18 +94,111 @@ class IntroWindow(QMainWindow, Form):
                     ).setText(str(self.sul[i][j]))
             getattr(self, "lineEdit_"+str(i)+"_"+str(j)
                     ).setFont(QtGui.QFont("Times", weight=QtGui.QFont.Bold))
-            Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.blue)
+            Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.green)
             getattr(self, "lineEdit_"+str(i) + "_"+str(j)).setPalette(Palette)
             getattr(self, "lineEdit_"+str(i) + "_"+str(j)).setReadOnly(True)
             self.hintcount += 1
 
+    def Clear(self):
+        for i in self.untaken:
+            [i, j] = self.indexDecoding(i)
+            a = getattr(self, "lineEdit_"+str(i) + "_"+str(j)).clear()
+
+    def CheckAwnser(self):
+        Palette = QtGui.QPalette()
+        for i in self.untaken:
+            [i, j] = self.indexDecoding(i)
+            a = getattr(self, "lineEdit_"+str(i) + "_"+str(j)).text()
+            self.values = [i, j]
+            b = int(a)
+            if self.checkwSul(i, j, b):
+                print(f"checked [ {i} , {j} ]")
+                Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.green)
+                getattr(self, "lineEdit_"+str(i) +
+                        "_"+str(j)).setPalette(Palette)
+            else:
+                Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.red)
+                getattr(self, "lineEdit_"+str(i) +
+                        "_"+str(j)).setPalette(Palette)
+
+    def changed(self):
+        for i in self.untaken:
+            [i, j] = self.indexDecoding(i)
+            getattr(self, "lineEdit_"+str(i) + "_"+str(j)).clear()
+            self.values = [i, j]
+            getattr(self, "lineEdit_"+str(i) + "_"+str(j)
+                    ).returnPressed.connect(getattr(self.textchange))
+
+    def checkwSul(self, i, j, val):
+        if val == self.sul[i][j]:
+            return True
+        else:
+            return False
+
     def textchange(self):
+
+        Palette = QtGui.QPalette()
         # اینجا باید یه مشت ایف بزنی چک کنه ببینه درسته یا نه
-        pass
+        [i, j] = self.values
+        a = getattr(self, "lineEdit_"+str(i) + "_"+str(j)).displayText()
+        print(f"[ {i} , {j}]")
+        getattr(self, "lineEdit_"+str(i) + "_"+str(j)).setText("0")
+        print(str(a))
+        self.puzzle[i][j] = a
+        if self.check_row(a) and self.check_colum(a) and self.check_box(a):
+            Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.red)
+            getattr(self, "lineEdit_"+str(i) + "_"+str(j)).setPalette(Palette)
+
     # کد رو نوشتی passهارو بردار
+
+    def check_row(self, val):
+        row = self.values[0]
+        Row = self.puzzle[row]
+        if val in Row:
+            return False
+        else:
+            return True
+
+    def check_colum(self, val):
+        col = self.values[1]
+        Col = [[row[col] for row in self.puzzle]]
+        if val in Col:
+            return False
+        else:
+            return True
+
+    def find_box_start(self, coordinate):
+        return coordinate // 3 * 3
+
+    def get_box_coordinates(self, row_number, column_number):
+        return self.find_box_start(column_number), self.find_box_start(row_number)
+
+    def get_box(self):
+        start_y, start_x = self.get_box_coordinates(
+            self.values[0], self.values[1])
+        box = []
+        for i in range(start_x, 3 + start_x):
+            box.extend(self.puzzle[i][start_y:start_y + 3])
+        return box
+
+    def check_box(self, val):
+        b = self.get_box()
+        if val in b:
+            print("Box False")
+            return False
+        else:
+            return True
+
+    def valueCheck(self, val):
+        pass
 
     def showMessageBox(self):
         QtGui.QMessageBox.information(self, "You have used Your 3 hints")
+
+
+def textchange(text):
+    # اینجا باید یه مشت ایف بزنی چک کنه ببینه درسته یا نه
+    print(text)
 
 
 if __name__ == "__main__":
@@ -127,5 +213,6 @@ if __name__ == "__main__":
     puzz = start(c, 20)
     print("Started")
     w = IntroWindow(puzz, b)
+    print(b)
     w.show()
     sys.exit(app.exec_())
