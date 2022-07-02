@@ -1,6 +1,7 @@
 import copy
 from Backtracker import *
 from genartor import *
+import random
 from random import seed
 from random import randint
 from time import time
@@ -11,8 +12,8 @@ class Earaser:
         self.puzzle = FullPuzzle
         self.index = 0
         self.Enumb = Number
-        self.counter = 0
-        self.taken = []  # A list for elements that are earased
+        self.counter = 0  # number of unearased members
+        self.taken = list(range(1, 82))  # A list for elements that are earased
         self.uniqueness = True
 
     def indexDecoding(self, numb):
@@ -24,20 +25,15 @@ class Earaser:
         return [a, number - 1]
 
     def GetUntakenIndex(self):
-        while True:
-            print("In loop 1")
-            if self.index in self.taken:
-                self.index = self.indexDecoding(RandomNumber(1, 81))
-            else:
-                self.taken.append(self.index)
-                return
+        a = random.choice(self.taken)
+        self.index = self.indexDecoding(a)
+        self.taken.remove(a)
 
     def checkIfUnique(self):
         temp = copy.deepcopy(self.puzzle)
         self.uniqueness = sudoku(temp, self.counter)
 
     def Earase(self):
-        self.index = self.indexDecoding(RandomNumber(1, 81))
         temp = self.puzzle
         self.GetUntakenIndex()
         for i in range(self.Enumb+1):
@@ -69,7 +65,7 @@ def RandomNumber(start, end):
     return randint(start, end)
 
 
-def start(puzzle, number):
+def startMaker(puzzle, number):
     myP = Earaser(puzzle, number)
     a = myP.starter()
     return a

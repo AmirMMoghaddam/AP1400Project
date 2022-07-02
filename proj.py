@@ -1,11 +1,9 @@
 import os
-from time import sleep, time
-from tkinter import N
 import PyQt5
 import sys
 from PyQt5 import uic, QtGui, QtCore
 from PyQt5.QtWidgets import QApplication, QMainWindow
-from matplotlib.pyplot import text
+from PyQt5.QtWidgets import QMessageBox
 from FinalMaker import *
 from genartor import *
 import random
@@ -16,45 +14,43 @@ Form = uic.loadUiType(os.path.join(os.getcwd(), "project.ui"))[0]
 
 # اینا باید تو کلاس تعریف بشن ولی نمیدونم چجوری برا همین اینجا نوشتم
 
-FormM = uic.loadUiType(os.path.join(os.getcwd(), "projectmain.ui"))[0]
-
-
-class MainWindow(QMainWindow, FormM):
-    def __init__(self):
-        super(MainWindow, self).__init__()
-        self.setupUi(self)
-        self.pushButton_biginner.clicked.connect(Game)
-        self.pushButton_medium.clicked.connect(Game)
-        self.pushButton_hard.clicked.connect(Game)
-
 
 class IntroWindow(QMainWindow, Form):
-    def __init__(self, Puzzle, Sulution):
+    def __init__(self):
         super(IntroWindow, self).__init__()
         self.setupUi(self)
-        self.puzzle = Puzzle
+        self.puzzle = 0
         self.hintcount = 0
-        self.sul = Sulution
+        self.sul = 0
         self.untaken = list(range(1, 82))
+        self.fails = 0  # faills in every try
+        self.TotalFail = 0  # fails in one round
         self.index = 0
-        self.Fill()
+        self.numb = 0
         self.values = 0
         self.hint.clicked.connect(self.sayhint)
         self.quit.clicked.connect(lambda: app.quit())
         self.checkbutton.clicked.connect(self.CheckAwnser)
         self.clearbutton.clicked.connect(self.Clear)
         self.resetbutton.clicked.connect(self.Reset)
-        self.text_time.setText(f"{time()/1000}ms")
-
+        self.buildbutton.clicked.connect(self.build)
+        self.solvebutton.clicked.connect(self.Solve)
+        self.hintLCD.display(self.hintcount)
+        self.failLCD.display(self.TotalFail)
         #   به جای این که خیلی اشغاله میتونیم از ال سی دی استفاده کنیم به نظرت هرچی بهتره
         # https://doc.qt.io/qtforpython-5/PySide2/QtWidgets/QLCDNumber.html
 
-        # تو کدت اونجایی که خونه ها تعریف میشن چی باشن اینو ست تکست کن کن
-        # self.text_xy.textChanged.connect(self.textchange)
-        # self.progressBar.setRange(maximum, minimum)
-        # self.progressBar.valueChanged()
+    def Lock(self):
+        for i in range(9):
+            for j in range(9):
+                getattr(self, "lineEdit_"+str(i) +
+                        "_"+str(j)).setReadOnly(True)
 
-      # برای اینکه نشون بده چند درصدش کامل شده اینجا درصد میدی نشون میده
+    def unLock(self):
+        for i in range(9):
+            for j in range(9):
+                getattr(self, "lineEdit_"+str(i) +
+                        "_"+str(j)).setReadOnly(False)
 
     def Fill(self):
         Palette = QtGui.QPalette()
@@ -72,7 +68,6 @@ class IntroWindow(QMainWindow, Form):
                             "_"+str(j)).setPalette(Palette)
                     getattr(self, "lineEdit_"+str(i) +
                             "_"+str(j)).setReadOnly(True)
-                    sleep(0.01)
                 else:
                     getattr(self, "lineEdit_"+str(i)+"_" +
                             str(j)).setText('')
@@ -103,11 +98,12 @@ class IntroWindow(QMainWindow, Form):
     def sayhint(self):
         Palette = QtGui.QPalette()
         if self.hintcount == 3:
-            self.showMessageBox
+            self.showMessageBox()
         else:
             self.GetUntakenIndex()
             i = self.index[0]
             j = self.index[1]
+            # self.untaken.remove(self.indexCoding())
             getattr(self, "lineEdit_"+str(i)+"_" + str(j)
                     ).setText(str(self.sul[i][j]))
             getattr(self, "lineEdit_"+str(i)+"_"+str(j)
@@ -116,6 +112,7 @@ class IntroWindow(QMainWindow, Form):
             getattr(self, "lineEdit_"+str(i) + "_"+str(j)).setPalette(Palette)
             getattr(self, "lineEdit_"+str(i) + "_"+str(j)).setReadOnly(True)
             self.hintcount += 1
+            self.hintLCD.display(self.hintcount)
 
     def Clear(self):
         for i in self.untaken:
@@ -123,6 +120,11 @@ class IntroWindow(QMainWindow, Form):
             a = getattr(self, "lineEdit_"+str(i) + "_"+str(j)).clear()
 
     def Reset(self):
+        self.TotalFail = 0
+        self.hintcount = 0
+        self.hintLCD.display(self.hintcount)
+        self.failLCD.display(self.TotalFail)
+        self.unLock()
         self.untaken = list(range(1, 82))
         starter = []
         for i in range(0, 9):
@@ -131,26 +133,58 @@ class IntroWindow(QMainWindow, Form):
         print("Created")
         self.sul = b
         c = copy.deepcopy(b)
-        self.puzzle = start(c, 20)
+        self.puzzle = start(c, self.numb)
         print("Started")
         self.Fill()
 
     def CheckAwnser(self):
         Palette = QtGui.QPalette()
+        self.fails = 0
         for i in self.untaken:
             [i, j] = self.indexDecoding(i)
             a = getattr(self, "lineEdit_"+str(i) + "_"+str(j)).text()
             self.values = [i, j]
-            b = int(a)
-            if self.checkwSul(i, j, b):
-                print(f"checked [ {i} , {j} ]")
-                Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.green)
-                getattr(self, "lineEdit_"+str(i) +
-                        "_"+str(j)).setPalette(Palette)
-            else:
+            if a == '':
+                if self.TotalFail == 3:
+                    self.showfailMessage()
                 Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.red)
                 getattr(self, "lineEdit_"+str(i) +
                         "_"+str(j)).setPalette(Palette)
+                self.fails += 1
+            else:
+                b = int(a)
+                if self.checkwSul(i, j, b):
+                    print(f"checked [ {i} , {j} ]")
+                    Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.green)
+                    getattr(self, "lineEdit_"+str(i) +
+                            "_"+str(j)).setPalette(Palette)
+
+                    getattr(self, "lineEdit_"+str(i) +
+                            "_"+str(j)).setReadOnly(True)
+                else:
+                    if self.TotalFail == 3:
+                        self.showfailMessage()
+                    Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.red)
+                    getattr(self, "lineEdit_"+str(i) +
+                            "_"+str(j)).setPalette(Palette)
+                    self.fails += 1
+        if self.fails > 0:
+            self.TotalFail += 1
+            self.failLCD.display(self.TotalFail)
+
+    def Solve(self):
+        Palette = QtGui.QPalette()
+        for i in range(9):
+            for j in range(9):
+                getattr(self, "lineEdit_"+str(i)+"_" +
+                        str(j)).setText(str(self.sul[i][j]))
+                getattr(self, "lineEdit_"+str(i)+"_"+str(j)
+                        ).setFont(QtGui.QFont("Times", weight=QtGui.QFont.Bold))
+                Palette.setColor(QtGui.QPalette.Text, QtCore.Qt.green)
+                getattr(self, "lineEdit_"+str(i) +
+                        "_"+str(j)).setPalette(Palette)
+                getattr(self, "lineEdit_"+str(i) +
+                        "_"+str(j)).setReadOnly(True)
 
     def changed(self):
         for i in self.untaken:
@@ -161,6 +195,7 @@ class IntroWindow(QMainWindow, Form):
                     ).returnPressed.connect(getattr(self.textchange))
 
     def checkwSul(self, i, j, val):
+
         if val == self.sul[i][j]:
             return True
         else:
@@ -224,41 +259,35 @@ class IntroWindow(QMainWindow, Form):
         pass
 
     def showMessageBox(self):
-        QtGui.QMessageBox.information(self, "You have used Your 3 hints")
+        QMessageBox.about(self, "No more Hints!", "You have used Your 3 hints")
 
+    def showfailMessage(self):
+        self.Lock()
+        QMessageBox.about(
+            self, "Sorry!", "Unfortunally you used your 3 chances")
 
-def textchange(text):
-    # اینجا باید یه مشت ایف بزنی چک کنه ببینه درسته یا نه
-    print(text)
-
-
-def Game():
-    starter = []
-    for i in range(0, 9):
-        starter.append([0, 0, 0, 0, 0, 0, 0, 0, 0])
-    b = create(starter)
-    print("Created")
-    c = copy.deepcopy(b)
-    puzz = start(c, 20)
-    print("Started")
-    w = IntroWindow(puzz, b)
-    print(b)
-    w.show()
+    def build(self):
+        self.TotalFail = 0
+        self.hintcount = 0
+        self.hintLCD.display(self.hintcount)
+        self.failLCD.display(self.TotalFail)
+        self.untaken = list(range(1, 82))
+        starter = []
+        for i in range(0, 9):
+            starter.append([0, 0, 0, 0, 0, 0, 0, 0, 0])
+        b = create(starter)
+        print("Created")
+        self.sul = b
+        c = copy.deepcopy(b)
+        self.numb = int(self.numberInput.text())
+        self.puzzle = startMaker(c, self.numb - 1)
+        print("Started")
+        self.Fill()
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setStyle("fusion")
-    starter = []
-    for i in range(0, 9):
-        starter.append([0, 0, 0, 0, 0, 0, 0, 0, 0])
-    b = create(starter)
-    print("Created")
-    c = copy.deepcopy(b)
-    puzz = start(c, 20)
-    print("Started")
-    w = IntroWindow(puzz, b)
-    print(b)
+    app.setStyle("breeze")
+    w = IntroWindow()
     w.show()
-
     sys.exit(app.exec_())

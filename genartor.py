@@ -1,5 +1,6 @@
 import random
 import copy
+from tracemalloc import start
 from solver import *
 from random import seed
 from random import randint
@@ -13,11 +14,13 @@ class Maker:
         self.puzzle = Wboard  # pass a puzzle white board
         # choose the index for changing
         self.index = 0
-        self.taken = []
+        self.timecounter = time()
+        self.untaken = list(range(1, 82))
         self.initialize()
         self.unsolvable = False
 
     def initialize(self):
+        a = time()
         for i in range(6):
             print(f"try {i}")
             self.index = self.indexDecoding(RandomNumber(1, 81))
@@ -40,13 +43,9 @@ class Maker:
                 return solve(self.puzzle)
 
     def GetUntakenIndex(self):
-        while True:
-            print("In loop 1")
-            if self.index in self.taken:
-                self.index = self.indexDecoding(RandomNumber(1, 81))
-            else:
-                self.taken.append(self.index)
-                return
+        a = random.choice(self.untaken)
+        self.index = self.indexDecoding(a)
+        self.untaken.remove(a)
 
     def GetANumber(self):
         numb = RandomNumber(1, 9)
@@ -125,7 +124,9 @@ class Maker:
             temp_puzzle[7]+temp_puzzle[8]
         if 0 in tempList:
             self.unsolvable = True
+            print("unsolvable")
         else:
+            print("solvable")
             self.unsolvable = False
 
 
